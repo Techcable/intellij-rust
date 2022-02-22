@@ -237,6 +237,7 @@ private AnyTypeArgument ::= <<typeReferenceOrAssocTypeBinding TypePathGenericArg
                           | never (AssocTypeBinding | TypeReference)
 
 AssocTypeBinding ::= TypePathGenericArgsNoTypeQual (AssocTypeBindingType | AssocTypeBindingBound) {
+  implements = "org.rust.lang.core.psi.ext.RsInferenceContextOwner"
   extends = "org.rust.lang.core.psi.ext.RsStubbedElementImpl<?>"
   stubClass = "org.rust.lang.core.stubs.RsPlaceholderStub<?>"
   elementTypeFactory = "org.rust.lang.core.stubs.StubImplementationsKt.factory"

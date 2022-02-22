@@ -14,6 +14,7 @@ import org.rust.lang.core.psi.ext.*
 import org.rust.lang.core.resolve.*
 import org.rust.lang.core.resolve.ref.MethodResolveVariant
 import org.rust.lang.core.resolve.ref.pathPsiSubst
+import org.rust.lang.core.resolve.ref.resolveAssocTypeBinding
 import org.rust.lang.core.resolve.ref.resolvePathRaw
 import org.rust.lang.core.types.*
 import org.rust.lang.core.types.consts.*
@@ -241,7 +242,13 @@ class RsInferenceContext(
                 RsTypeInferenceWalker(this, TyUnknown).inferReplCodeFragment(element)
             }
             is RsPath -> {
-                val declaration = resolvePathRaw(element, lookup).singleOrNull()?.element as? RsGenericDeclaration
+                val parent = element.parent
+                val declaration = if (parent is RsAssocTypeBinding) {
+                    val trait = resolvePathRaw(parent.parentPath, lookup).singleOrNull()?.element as? RsTraitItem
+                    trait?.let { resolveAssocTypeBinding(it, parent) }
+                } else {
+                    resolvePathRaw(element, lookup).singleOrNull()?.element as? RsGenericDeclaration
+                }
                 if (declaration != null) {
                     val constParameters = mutableListOf<RsConstParameter>()
                     val constArguments = mutableListOf<RsElement>()
