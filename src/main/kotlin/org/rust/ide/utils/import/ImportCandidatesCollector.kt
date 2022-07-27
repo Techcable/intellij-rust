@@ -6,10 +6,14 @@
 package org.rust.ide.utils.import
 
 import com.intellij.codeInsight.completion.PrefixMatcher
+import com.intellij.openapi.project.Project
 import com.intellij.util.containers.MultiMap
 import com.intellij.util.containers.map2Array
 import org.rust.cargo.project.workspace.PackageOrigin
 import org.rust.cargo.util.AutoInjectedCrates
+import org.rust.ide.settings.ExclusionType
+import org.rust.ide.settings.RsCodeInsightSettings
+import org.rust.ide.settings.RsProjectCodeInsightSettings
 import org.rust.lang.core.crate.Crate
 import org.rust.lang.core.crate.CrateGraphService
 import org.rust.lang.core.crate.CratePersistentId
@@ -60,7 +64,7 @@ object ImportCandidatesCollector {
     fun getImportCandidates(context: ImportContext, targetName: String): List<ImportCandidate> {
         val itemsPaths = context.getAllModPaths()
             .flatMap { context.getAllItemPathsInMod(it, targetName) }
-        return context.convertToCandidates(itemsPaths)
+        return context.convertToCandidates(itemsPaths, usedForMethod = false)
     }
 
     fun getCompletionCandidates(
@@ -74,7 +78,7 @@ object ImportCandidatesCollector {
             .withIndex().associate { (index, value) -> value to index }
         val itemsPaths = modPaths
             .flatMap { context.getAllItemPathsInMod(it, nameToPriority::containsKey) }
-        return context.convertToCandidates(itemsPaths)
+        return context.convertToCandidates(itemsPaths, usedForMethod = false)
             /** we need this filter in addition to [hasVisibleItemInRootScope] because there can be local imports */
             .filter { it.item !in processedElements[it.itemName] }
             .sortedBy { nameToPriority[it.itemName] }
@@ -99,7 +103,7 @@ object ImportCandidatesCollector {
         val context = ImportContext.from(scope, ImportContext.Type.AUTO_IMPORT) ?: return emptyList()
         val modPaths = context.getAllModPaths()
         val itemsPaths = modPaths.flatMap { context.getTraitsPathsInMod(it, traitsPaths) }
-        return context.convertToCandidates(itemsPaths)
+        return context.convertToCandidates(itemsPaths, usedForMethod = true)
     }
 
     private fun collectTraitsToImport(scope: RsElement, sources: List<TraitImplSource>): List<RsTraitItem>? {
@@ -124,8 +128,12 @@ object ImportCandidatesCollector {
         getImportCandidates(context, target).firstOrNull()
 }
 
-private fun ImportContext.convertToCandidates(itemsPaths: List<ItemUsePath>): List<ImportCandidate> =
-    itemsPaths
+private fun ImportContext.convertToCandidates(
+    itemsPaths: List<ItemUsePath>,
+    usedForMethod: Boolean
+): List<ImportCandidate> {
+    val excludedPaths = project.getExcludedPaths(usedForMethod)
+    return itemsPaths
         .filterForSingleRootItem(this)
         .groupBy { it.toItemWithNamespace() }
         .mapValues { (item, paths) -> filterForSingleItem(paths, item) }
@@ -143,10 +151,15 @@ private fun ImportContext.convertToCandidates(itemsPaths: List<ItemUsePath>): Li
                 }
             }
         }
-        .filter { it.item !is RsTraitItem || isUsefulTraitImport(it.info.usePath) }
+        .filter {
+            val usePath = it.info.usePath
+            (it.item !is RsTraitItem || isUsefulTraitImport(usePath))
+                && excludedPaths.none { excludedPath -> matchesExcludedPath(usePath, excludedPath) }
+        }
         // for items which belongs to multiple namespaces (e.g. unit structs)
         .distinctBy { it.item to it.info.usePath }
         .sorted()
+}
 
 @Suppress("ArrayInDataClass")
 private data class ModUsePath(
@@ -421,6 +434,20 @@ private fun ImportContext.isUsefulTraitImport(usePath: String): Boolean {
     return element !is RsAbstractable
         || element.owner !is RsAbstractableOwner.Trait
         || element.canBeAccessedByTraitName
+}
+
+// `foo::bar` excludes `foo::bar` and `foo::bar::baz`, but not `foo::bar2`
+private fun matchesExcludedPath(usePath: String, excludedPath: String): Boolean =
+    usePath == excludedPath
+        || usePath.startsWith(excludedPath) && usePath.removePrefix(excludedPath).startsWith("::")
+
+private fun Project.getExcludedPaths(usedForMethod: Boolean): List<String> {
+    val excludedPaths = RsCodeInsightSettings.getInstance().excludedPaths +
+        RsProjectCodeInsightSettings.getInstance(this).state.excludedPaths
+    return excludedPaths.mapNotNull {
+        if (it.type == ExclusionType.Methods && !usedForMethod) return@mapNotNull null
+        it.path
+    }
 }
 
 private fun ImportContext.isRootPathResolved(usePath: String): Boolean {

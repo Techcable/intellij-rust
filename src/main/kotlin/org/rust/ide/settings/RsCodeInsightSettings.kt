@@ -19,6 +19,7 @@ class RsCodeInsightSettings : PersistentStateComponent<RsCodeInsightSettings> {
     var suggestOutOfScopeItems: Boolean = true
     var addUnambiguousImportsOnTheFly: Boolean = false
     var importOnPaste: Boolean = false
+    var excludedPaths: Array<ExcludedPath> = DEFAULT_EXCLUDED_PATHS
 
     override fun getState(): RsCodeInsightSettings = this
 
@@ -28,5 +29,15 @@ class RsCodeInsightSettings : PersistentStateComponent<RsCodeInsightSettings> {
 
     companion object {
         fun getInstance(): RsCodeInsightSettings = service()
+
+        private val DEFAULT_EXCLUDED_PATHS: Array<ExcludedPath> = arrayOf(
+            ExcludedPath("std::borrow::Borrow", ExclusionType.Methods),
+            ExcludedPath("core::panicking"),
+            ExcludedPath("std::intrinsics::unreachable"),
+        )
     }
 }
+
+// must have default constructor and mutable fields for deserialization
+class ExcludedPath(var path: String = "", var type: ExclusionType = ExclusionType.Always)
+enum class ExclusionType { Always, Methods }
