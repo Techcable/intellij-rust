@@ -1703,7 +1703,7 @@ class RsExpressionTypeInferenceTest : RsTypificationTestBase() {
 
     fun `test macro type`() = testExpr("""
         fn main() {
-          macro_rules! i32_ty {
+            macro_rules! i32_ty {
                 () => { i32 }
             }
             let a: i32_ty!() = unresolved();
@@ -1713,7 +1713,7 @@ class RsExpressionTypeInferenceTest : RsTypificationTestBase() {
 
     fun `test infinite macro type`() = testExpr("""
         fn main() {
-          macro_rules! infinite {
+            macro_rules! infinite {
                 () => { infinite!() }
             }
             let a: infinite!() = unresolved();

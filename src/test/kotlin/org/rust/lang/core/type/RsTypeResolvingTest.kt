@@ -573,6 +573,33 @@ class RsTypeResolvingTest : RsTypificationTestBase() {
                //^ Foo<A1, 1, C1>
     """)
 
+    fun `test macro type`() = testType("""
+        struct Foo<T>(T);
+        struct Bar;
+        macro_rules! foo {
+            () => { Foo<Bar> }
+        }
+        type T = (foo!(), foo!());
+               //^ (Foo<Bar>, Foo<Bar>)
+    """)
+
+    fun `test incorrect Self type in macro in impl self type`() = testType("""
+        struct Foo<T>(T);
+        macro_rules! foo {
+            () => { Self }
+        }
+        impl Foo<(foo!(), foo!())> {}
+           //^ Foo<(<unknown>, <unknown>)>
+    """)
+
+    fun `test recursive associated type projection`() = testType("""
+        trait Trait<A> {
+            type Item;
+        }
+        type T = <T as Trait<T>>::Item;
+               //^ <<unknown> as Trait<<unknown>>>::Item
+    """)
+
     /**
      * Checks the type of the element in [code] pointed to by `//^` marker.
      */
