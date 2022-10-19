@@ -17,7 +17,7 @@ import org.rust.RsBundle
 import org.rust.cargo.project.model.CargoProject
 import org.rust.cargo.project.model.cargoProjects
 import org.rust.cargo.project.workspace.CargoWorkspace
-import org.rust.cargo.runconfig.command.CargoCommandConfiguration.Companion.emulateTerminalDefault
+import org.rust.cargo.runconfig.RsCommandConfiguration.Companion.emulateTerminalDefault
 import org.rust.cargo.runconfig.command.workingDirectory
 import org.rust.cargo.runconfig.createCargoCommandRunConfiguration
 import org.rust.cargo.runconfig.wasmpack.WasmPackCommandConfiguration

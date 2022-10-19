@@ -5,9 +5,13 @@
 
 package org.rust.cargo.runconfig.ui
 
+import com.intellij.openapi.options.ConfigurationException
 import com.intellij.openapi.project.Project
+import com.intellij.ui.components.CheckBox
 import com.intellij.ui.dsl.builder.panel
 import org.rust.cargo.project.model.cargoProjects
+import org.rust.cargo.runconfig.RsCommandConfiguration
+import org.rust.cargo.runconfig.command.CargoCommandConfiguration
 import org.rust.cargo.runconfig.wasmpack.WasmPackCommandConfiguration
 import org.rust.cargo.runconfig.wasmpack.util.WasmPackCommandCompletionProvider
 import org.rust.cargo.util.RsCommandLineEditor
@@ -25,6 +29,8 @@ class WasmPackCommandConfigurationEditor(project: Project)
         row("Command:") {
             fullWidthCell(command)
         }
+
+        row { cell(emulateTerminal) }
 
         row(workingDirectory.label) {
             fullWidthCell(workingDirectory)

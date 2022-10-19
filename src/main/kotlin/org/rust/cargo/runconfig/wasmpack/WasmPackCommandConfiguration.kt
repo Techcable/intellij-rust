@@ -12,6 +12,7 @@ import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.util.execution.ParametersListUtil
 import org.jdom.Element
 import org.rust.cargo.project.settings.toolchain
@@ -34,18 +35,6 @@ class WasmPackCommandConfiguration(
         val wasmPack = environment.project.toolchain?.wasmPack() ?: return null
         val workingDirectory = workingDirectory?.toFile() ?: return null
         return WasmPackCommandRunState(environment, this, wasmPack, workingDirectory)
-    }
-
-    override fun writeExternal(element: Element) {
-        super.writeExternal(element)
-        element.writeString("command", command)
-        element.writePath("workingDirectory", workingDirectory)
-    }
-
-    override fun readExternal(element: Element) {
-        super.readExternal(element)
-        element.readString("command")?.let { command = it }
-        element.readPath("workingDirectory")?.let { workingDirectory = it }
     }
 
     override fun suggestedName(): String = command.substringBefore(' ').capitalize()
