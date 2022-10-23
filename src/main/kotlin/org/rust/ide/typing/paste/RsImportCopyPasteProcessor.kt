@@ -99,6 +99,7 @@ class RsImportCopyPasteProcessor : CopyPastePostProcessor<RsTextBlockTransferabl
         val elements = gatherElements(file, range)
         val importCtx = elements.firstOrNull { it is RsElement } as? RsElement ?: return
 
+        // The visitor doesn't recurse, because the gathered `elements` contain all top-level items
         val visitor = ImportingVisitor(range, data.importMap)
 
         runWriteAction {
@@ -141,13 +142,11 @@ private class ImportingVisitor(private val range: TextRange, private val importM
     override fun visitPath(path: RsPath) {
         val ctx = AutoImportFix.findApplicableContext(path)
         handleContext(path, ctx)
-        super.visitPath(path)
     }
 
     override fun visitMethodCall(methodCall: RsMethodCall) {
         val ctx = AutoImportFix.findApplicableContext(methodCall)
         handleContext(methodCall, ctx)
-        super.visitMethodCall(methodCall)
     }
 
     override fun visitPatBinding(binding: RsPatBinding) {
@@ -155,7 +154,6 @@ private class ImportingVisitor(private val range: TextRange, private val importM
             val ctx = AutoImportFix.findApplicableContext(binding)
             handleContext(binding, ctx)
         }
-        super.visitPatBinding(binding)
     }
 
     private fun handleContext(element: PsiElement, ctx: AutoImportFix.Context?) {
