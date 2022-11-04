@@ -269,7 +269,7 @@ class RsConsoleRunner(project: Project) :
 
         val messages = mutableListOf("Can't start evcxr.")
         val message = e.message
-        if (message != null && message.isNotBlank()) {
+        if (!message.isNullOrBlank()) {
             messages += message.lines()
         }
 

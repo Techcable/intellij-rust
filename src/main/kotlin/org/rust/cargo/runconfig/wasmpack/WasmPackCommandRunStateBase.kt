@@ -17,7 +17,7 @@ import java.io.File
 abstract class WasmPackCommandRunStateBase(
     environment: ExecutionEnvironment,
     val runConfiguration: WasmPackCommandConfiguration,
-    val wasmPack: WasmPack,
+    private val wasmPack: WasmPack,
     val workingDirectory: File
 ) : CommandLineState(environment) {
     override fun startProcess(): ProcessHandler {

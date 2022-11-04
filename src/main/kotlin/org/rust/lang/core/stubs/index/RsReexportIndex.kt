@@ -47,12 +47,6 @@ class RsReexportIndex : AbstractStubIndex<ReexportKey, RsUseSpeck>() {
             producedName?.let { sink.occurrence(KEY, ReexportKey.ProducedNameKey(it)) }
         }
 
-        fun findReexportsByProducedName(
-            project: Project,
-            target: String,
-            scope: GlobalSearchScope = GlobalSearchScope.allScope(project)
-        ): Collection<RsUseSpeck> = findReexportsByName(project, ReexportKey.ProducedNameKey(target), scope)
-
         fun findReexportsByOriginalName(
             project: Project,
             target: String,

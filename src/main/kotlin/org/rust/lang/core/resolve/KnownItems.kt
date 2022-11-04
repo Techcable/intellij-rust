@@ -208,14 +208,6 @@ enum class KnownDerivableTrait(
         // We don't use hardcoded impls for non-std derives if proc macro expansion is enabled
         return isStd || !ProcMacroApplicationService.isDeriveEnabled()
     }
-
-    companion object {
-        /** Hardcoded trait impl vs proc macro expansion usage */
-        fun shouldUseHardcodedTraitDerive(deriveName: String?): Boolean {
-            val known = KNOWN_DERIVABLE_TRAITS[deriveName] ?: return false
-            return known.shouldUseHardcodedTraitDerive()
-        }
-    }
 }
 
 val KnownDerivableTrait.withDependencies: List<KnownDerivableTrait> get() = listOf(this, *dependencies)

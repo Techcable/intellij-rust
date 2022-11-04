@@ -5,8 +5,6 @@
 
 package org.rust.lang.core.resolve.indexes
 
-import com.intellij.openapi.project.Project
-import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.stubs.IndexSink
 import com.intellij.psi.stubs.StringStubIndexExtension
 import com.intellij.psi.stubs.StubIndexKey
@@ -14,8 +12,6 @@ import org.rust.lang.core.psi.ext.RsPossibleMacroCall
 import org.rust.lang.core.psi.ext.canBeMacroCall
 import org.rust.lang.core.stubs.RsFileStub
 import org.rust.lang.core.stubs.RsMetaItemStub
-import org.rust.openapiext.checkCommitIsNotInProgress
-import org.rust.openapiext.getElements
 
 class RsMacroCallIndex : StringStubIndexExtension<RsPossibleMacroCall>() {
 
@@ -37,14 +33,6 @@ class RsMacroCallIndex : StringStubIndexExtension<RsPossibleMacroCall>() {
             if (stub.psi.canBeMacroCall) {
                 sink.occurrence(KEY, SINGLE_KEY)
             }
-        }
-
-        fun getMacroCalls(
-            project: Project,
-            scope: GlobalSearchScope = GlobalSearchScope.allScope(project)
-        ): Collection<RsPossibleMacroCall> {
-            checkCommitIsNotInProgress(project)
-            return getElements(KEY, SINGLE_KEY, project, scope)
         }
     }
 }

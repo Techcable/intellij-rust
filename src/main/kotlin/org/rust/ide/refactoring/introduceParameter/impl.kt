@@ -130,7 +130,6 @@ private class ParamIntroducer(
         return getTraitAndImpls(traitFunction)
             .map { findFunctionUsages(it) }
             .flatten()
-            .asSequence()
     }
 
     private fun findDescendantFunction(traitImplRef: PsiReference, functionToSearch: RsFunction): RsFunction? {

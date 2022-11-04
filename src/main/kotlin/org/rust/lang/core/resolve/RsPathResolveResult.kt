@@ -22,13 +22,4 @@ data class RsPathResolveResult<T : RsElement>(
     override fun getElement(): PsiElement = element
 
     override fun isValidResult(): Boolean = true
-
-    inline fun mapSubst(
-        f: (Substitution) -> Substitution
-    ): RsPathResolveResult<T> {
-        if (resolvedSubst === emptySubstitution) {
-            return this
-        }
-        return RsPathResolveResult(element, f(resolvedSubst), isVisible)
-    }
 }

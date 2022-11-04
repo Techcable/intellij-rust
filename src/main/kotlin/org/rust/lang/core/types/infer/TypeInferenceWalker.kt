@@ -863,7 +863,7 @@ class RsTypeInferenceWalker(
 
     fun inferConstArgumentTypes(constParameters: List<RsConstParameter>, constArguments: List<RsElement>) {
         val argDefs = constParameters.asSequence()
-            .map { it.typeReference?.rawType?.let { normalizeAssociatedTypesIn(it) } ?: TyUnknown }
+            .map { p -> p.typeReference?.rawType?.let { normalizeAssociatedTypesIn(it) } ?: TyUnknown }
             .infiniteWithTyUnknown()
         for ((type, expr) in argDefs.zip(constArguments.asSequence())) {
             when (expr) {
@@ -1548,11 +1548,6 @@ class RsTypeInferenceWalker(
 private enum class Needs {
     MutPlace,
     None;
-
-    fun toMutability(): Mutability = when (this) {
-        MutPlace -> MUTABLE
-        None -> IMMUTABLE
-    }
 
     companion object {
         fun maybeMutPlace(mutability: Mutability): Needs = when (mutability) {

@@ -142,13 +142,6 @@ inline fun <reified T : PsiElement> PsiElement.descendantOfType(predicate: (T) -
     return descendantsOfType<T>().firstOrNull(predicate)
 }
 
-inline fun <reified T : PsiElement> PsiElement.anyDescendantOfType(predicate: (T) -> Boolean): Boolean {
-    return descendantOfType(predicate) != null
-}
-
-inline fun <reified T : PsiElement> PsiElement.stubDescendantsOfTypeStrict(): Collection<T> =
-    getStubDescendantsOfType(this, true, T::class.java)
-
 inline fun <reified T : PsiElement> PsiElement.stubDescendantsOfTypeOrSelf(): Collection<T> =
     getStubDescendantsOfType(this, false, T::class.java)
 

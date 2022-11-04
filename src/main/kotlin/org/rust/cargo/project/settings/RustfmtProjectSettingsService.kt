@@ -19,6 +19,7 @@ private const val serviceName: String = "RustfmtProjectSettings"
 
 @State(name = serviceName, storages = [Storage(StoragePathMacros.WORKSPACE_FILE)])
 class RustfmtProjectSettingsService(
+    @Suppress("unused")
     private val project: Project
 ) : SimplePersistentStateComponent<RustfmtState>(RustfmtState()) {
 

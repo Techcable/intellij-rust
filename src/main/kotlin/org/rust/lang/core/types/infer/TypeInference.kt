@@ -1398,6 +1398,8 @@ data class MethodPick(
 
     sealed class AutorefOrPtrAdjustment {
         data class Autoref(val mutability: Mutability, val unsize: Boolean) : AutorefOrPtrAdjustment()
+
+        @Suppress("unused")
         object ToConstPtr : AutorefOrPtrAdjustment()
     }
 

@@ -123,7 +123,7 @@ class CargoBuildTaskRunner : ProjectTaskRunner() {
             ?: return emptyList()
         val runner = ProgramRunner.findRunnerById(CargoCommandRunner.RUNNER_ID) ?: return emptyList()
 
-        val additionalArguments = buildList<String> {
+        val additionalArguments = buildList {
             val settings = project.rustSettings
             add("--all")
             if (settings.compileAllTargets) {
