@@ -29,15 +29,15 @@ The plugin is compatible with all IntelliJ-based IDEs starting from the version 
 
 
 |                        | Open-source and Educational IDEs<sup>*</sup> | [CLion] (commercial) | [IntelliJ IDEA] Ultimate, [GoLand] (commercial) | [PyCharm] Professional | [WebStorm], [PhpStorm], other commercial IDEs |
-|------------------------|----------------------------------------------|---|---|------------------------|---|
-| Language support       | +                                            | + | + | + | + |
-| Cargo support          | +                                            | + | + | + | + |
-| Code coverage          | +                                            | + | + | + | + |
-| Debugger               | -                                            | + | +** | +** | - |
-| Profiler               | -                                            | + | - | - | - |
-| Run targets            | -                                            | + | + | - | - |
-| Valgrind Memcheck      | -                                            | + | - | - | - |
-| [Detecting duplicates] | -                                            | + | + | + | + |
+|------------------------|----------------------------------------------|----------------------|-------------------------------------------------|------------------------|-----------------------------------------------|
+| Language support       | +                                            | +                    | +                                               | +                      | +                                             |
+| Cargo support          | +                                            | +                    | +                                               | +                      | +                                             |
+| Code coverage          | +                                            | +                    | +                                               | +                      | +                                             |
+| Debugger               | -                                            | +                    | +**                                             | +**                    | -                                             |
+| Profiler               | -                                            | +                    | -                                               | -                      | -                                             |
+| Run targets            | -                                            | +                    | +                                               | -                      | -                                             |
+| Valgrind Memcheck      | -                                            | +                    | -                                               | -                      | -                                             |
+| [Detecting duplicates] | -                                            | +                    | +                                               | +                      | +                                             |
 
 
 \* [IntelliJ IDEA] Community Edition, [PyCharm] Community Edition, [PyCharm Edu and IntelliJ IDEA Edu].
