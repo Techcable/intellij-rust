@@ -63,15 +63,19 @@ class CreateStructFieldFromConstructorFix private constructor(
             val fieldName = field.identifier?.text ?: return null
             val fieldType = field.type
             if (!canUse(fieldType)) return null
-            val struct = field.resolveToStructItem() ?: return null
+            val struct = field.parentStructLiteral.path.resolveToStructItem() ?: return null
             if (struct.tupleFields != null) return null
             val structBlockFields = struct.blockFields
             if (structBlockFields != null && structBlockFields.rbrace == null || struct.identifier == null) return null
             return CreateStructFieldFromConstructorFix(struct, fieldName, fieldType)
         }
 
-        private fun RsStructLiteralField.resolveToStructItem(): RsStructItem? {
-            return parentStructLiteral.path.reference?.resolve() as? RsStructItem
+        private fun RsPath.resolveToStructItem(): RsStructItem? {
+            return when (val result = reference?.resolve()) {
+                is RsStructItem -> result
+                is RsImplItem -> (result.typeReference as? RsPathType)?.path?.reference?.resolve() as? RsStructItem
+                else -> null
+            }
         }
 
         private fun canUse(ty: Ty): Boolean {
