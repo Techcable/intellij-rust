@@ -416,7 +416,7 @@ class DefCollector(
                 call.containingMod,
                 context,
                 call.macroIndex,
-                includeMacroFile = includingFile,
+                includeMacroIndex = call.macroIndex,
                 propagateLegacyMacros = true
             )
         } else if (!context.isHangingMode) {

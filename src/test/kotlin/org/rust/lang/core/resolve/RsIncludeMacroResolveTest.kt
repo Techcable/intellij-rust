@@ -8,6 +8,7 @@ package org.rust.lang.core.resolve
 import org.intellij.lang.annotations.Language
 import org.rust.ExpandMacros
 
+@ExpandMacros
 class RsIncludeMacroResolveTest : RsResolveTestBase() {
 
     fun `test resolve struct to included file`() = checkResolve("""
@@ -144,6 +145,19 @@ class RsIncludeMacroResolveTest : RsResolveTestBase() {
     //- inner/foo.rs
         include!("bar.rs");
     //- inner/bar.rs
+        struct Foo;
+    """)
+
+    fun `test include file in included file in included file`() = checkResolve("""
+    //- lib.rs
+        include!("foo.rs");
+        fn foo(x: Foo) {}
+                 //^ baz.rs
+    //- foo.rs
+        include!("bar.rs");
+    //- bar.rs
+        include!("baz.rs");
+    //- baz.rs
         struct Foo;
     """)
 
