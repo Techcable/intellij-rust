@@ -6,10 +6,8 @@
 package org.rust.ide.hints.type
 
 import com.intellij.openapi.vfs.VirtualFileFilter
-import org.rust.ExpandMacros
-import org.rust.ProjectDescriptor
-import org.rust.WithStdlibRustProjectDescriptor
-import org.rust.fileTreeFromText
+import org.rust.*
+import org.rust.ide.experiments.RsExperiments.PROC_MACROS
 import org.rust.ide.hints.parameter.RsInlayParameterHintsProvider
 import org.rust.lang.core.macros.MacroExpansionScope
 import org.rust.lang.core.psi.RsMethodCall
@@ -528,6 +526,54 @@ class RsInlayTypeHintsProviderTest : RsInlayTypeHintsTestBase(RsInlayTypeHintsPr
                 .iter()
                 .find(|x<hint text="[:  [& [& i32]]]"/>| **x == 1)
                 .unwrap();
+        }
+    """)
+
+    fun `test inside macro call body 1`() = checkByText("""
+        macro_rules! id { ($ t:block) => { $ t } }
+        fn main() {
+            id! {
+                {
+                    let x/*hint text="[:  i32]"*/ = 1;
+                }
+            }
+        }
+    """)
+
+    fun `test inside macro call body 2`() = checkByText("""
+        macro_rules! as_is { ($($ t:tt)*) => {$($ t)*} }
+        fn main() {
+            as_is! {
+                let x/*hint text="[:  i32]"*/ = 1;
+            }
+        }
+    """)
+
+    fun `test inside macro call body 3`() = checkByText("""
+        macro_rules! gen { ($ t:ident) => { let $ t = 1; } }
+        fn main() {
+            gen!(X);
+        }
+    """)
+
+    @ExpandMacros(MacroExpansionScope.WORKSPACE)
+    @WithExperimentalFeatures(PROC_MACROS)
+    @ProjectDescriptor(WithProcMacroRustProjectDescriptor::class)
+    fun `test inside attribute macro call body`() = checkByText("""
+        #[test_proc_macros::attr_as_is]
+        fn test1() {
+            let x/*hint text="[:  i32]"*/ = 1;
+            let y/*hint text="[:  i32]"*/ = bar();
+        }
+        fn bar() -> i32 { 0 }
+
+        enum Option<T> { Some(T), None }
+        #[test_proc_macros::attr_as_is]
+        fn test2(x: Option<i32>) {
+            match x {
+                Option::Some(x/*hint text="[:  i32]"*/) => {},
+                Option::None => {},
+            }
         }
     """)
 }

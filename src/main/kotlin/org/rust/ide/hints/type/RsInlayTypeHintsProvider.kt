@@ -14,12 +14,17 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import com.intellij.psi.SyntaxTraverser
+import com.intellij.psi.util.parentOfTypes
 import org.rust.RsBundle
 import org.rust.lang.RsLanguage
+import org.rust.lang.core.macros.*
 import org.rust.lang.core.psi.*
 import org.rust.lang.core.psi.ext.*
+import org.rust.lang.core.resolve.DEFAULT_RECURSION_LIMIT
 import org.rust.lang.core.types.declaration
 import org.rust.lang.core.types.implLookup
 import org.rust.lang.core.types.infer.collectInferTys
@@ -27,6 +32,7 @@ import org.rust.lang.core.types.rawType
 import org.rust.lang.core.types.ty.TyInfer
 import org.rust.lang.core.types.ty.TyUnknown
 import org.rust.lang.core.types.type
+import org.rust.openapiext.testAssert
 import javax.swing.JComponent
 import javax.swing.JPanel
 
@@ -84,7 +90,17 @@ class RsInlayTypeHintsProvider : InlayHintsProvider<RsInlayTypeHintsProvider.Set
 
             override fun collect(element: PsiElement, editor: Editor, sink: InlayHintsSink): Boolean {
                 if (project.service<DumbService>().isDumb) return true
-                if (element !is RsElement) return true
+                doCollect(element, depth = 0)
+                return true
+            }
+
+            private fun doCollect(element: PsiElement, depth: Int) {
+                if (element !is RsElement) return
+
+                if (element is RsPossibleMacroCall) {
+                    processMacroCall(element, depth)
+                    return
+                }
 
                 if (settings.showForVariables) {
                     presentVariable(element)
@@ -95,8 +111,16 @@ class RsInlayTypeHintsProvider : InlayHintsProvider<RsInlayTypeHintsProvider.Set
                 if (settings.showForIterators) {
                     presentIterator(element)
                 }
+            }
 
-                return true
+            private fun processMacroCall(call: RsPossibleMacroCall, depth: Int) {
+                if (depth >= DEFAULT_RECURSION_LIMIT) return
+                val expansion = call.expansion ?: return
+                if (call.bodyTextRange?.isEmpty == true) return
+                val traverser = SyntaxTraverser.psiTraverser(expansion.file)
+                for (element in traverser.preOrderDfsTraversal()) {
+                    doCollect(element, depth + 1)
+                }
             }
 
             private fun presentVariable(element: RsElement) {
@@ -143,9 +167,10 @@ class RsInlayTypeHintsProvider : InlayHintsProvider<RsInlayTypeHintsProvider.Set
                     val type = infer.resolveTypeVarsIfPossible(rawType)
                     if (type is TyInfer || type is TyUnknown) continue
 
+                    val offset = findOriginalOffset(typeElement, file) ?: continue
                     val presentation = typeHintsFactory.typeHint(type)
                     val finalPresentation = presentation.withDisableAction(declaration.project)
-                    sink.addInlineElement(typeElement.endOffset, false, finalPresentation, false)
+                    sink.addInlineElement(offset, false, finalPresentation, false)
                 }
             }
 
@@ -179,10 +204,11 @@ class RsInlayTypeHintsProvider : InlayHintsProvider<RsInlayTypeHintsProvider.Set
             }
 
             private fun presentTypeForBinding(binding: RsPatBinding) {
+                val offset = findOriginalOffset(binding, file) ?: return
                 if (!binding.existsAfterExpansion(crate)) return
                 val presentation = typeHintsFactory.typeHint(binding.type)
                 val finalPresentation = presentation.withDisableAction(project)
-                sink.addInlineElement(binding.endOffset, false, finalPresentation, false)
+                sink.addInlineElement(offset, false, finalPresentation, false)
             }
         }
     }
@@ -217,3 +243,54 @@ private fun isObvious(pat: RsPat, declaration: RsElement?): Boolean =
         is RsStructItem, is RsEnumVariant -> pat is RsPatIdent
         else -> false
     }
+
+/**
+ * When [anchor] is expanded, finds corresponding offset in [originalFile],
+ * but only if macro body has enough context for showing hints:
+ *
+ * `foo1! { let x = 1; }` expanded to `let x = 1;` - show hints
+ * `foo2!(x, 1)` expanded to `let x = 1;` - don't show hints
+ */
+private fun findOriginalOffset(anchor: RsElement, originalFile: PsiFile): Int? {
+    if (anchor.containingFile == originalFile) return anchor.endOffset
+
+    /** else [anchor] is expanded */
+    val parent = anchor.parentOfTypes(RsStmt::class, RsLambdaExpr::class, RsMatchArm::class) ?: return null
+    return findOriginalOffset(anchor, anchor.endOffset, parent.textRange, originalFile)
+}
+
+/**
+ * Expansion:
+ * ... let x = 1; ...
+ * ~~~~~~~~ offset2
+ *         ^ anchor2
+ *     ~~~~~~~~~~ range2
+ *
+ * Original file:
+ * ... foo! { let x = 1; } ...
+ * ~~~~~~~~~~~~~~~ offset1
+ *            ~~~~~~~~~~ range1
+ *
+ */
+private fun findOriginalOffset(anchor2: PsiElement, offset2: Int, range2: TextRange, originalFile: PsiFile): Int? {
+    testAssert { range2.contains(offset2) }
+    val call = anchor2.findMacroCallExpandedFromNonRecursive() ?: return null
+    val ranges = call.expansion?.ranges ?: return null
+    val fileOffset = call.expansionContext.expansionFileStartOffset
+    val bodyRelativeOffset = call.bodyTextRange?.startOffset ?: return null
+    val offset1 = ranges.mapOffsetFromExpansionToCallBody(offset2 - fileOffset)
+        ?.let { it + bodyRelativeOffset } ?: return null
+
+    val range2Adjusted = range2.shiftLeft(fileOffset)
+    val rangeBodyRelative1 = ranges.ranges.singleOrNull { it.dstRange.contains(range2Adjusted) }
+        ?.let { range2Adjusted.shiftRight(it.srcOffset - it.dstOffset) } ?: return null
+    if (ranges.ranges.count { it.srcRange.intersects(rangeBodyRelative1) } != 1) return null
+    val range1 = rangeBodyRelative1.shiftRight(bodyRelativeOffset)
+    testAssert { range1.contains(offset1) }
+
+    return if (call.containingFile == originalFile) {
+        offset1
+    } else {
+        findOriginalOffset(call, offset1, range1, originalFile)
+    }
+}
