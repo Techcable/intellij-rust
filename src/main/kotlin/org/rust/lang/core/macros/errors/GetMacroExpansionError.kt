@@ -26,6 +26,7 @@ sealed class GetMacroExpansionError {
     ) : GetMacroExpansionError()
 
     object ModDataNotFound : GetMacroExpansionError()
+    object TooDeepExpansion : GetMacroExpansionError()
     object NoMacroIndex : GetMacroExpansionError()
     object ExpansionNameNotFound : GetMacroExpansionError()
     object ExpansionFileNotFound : GetMacroExpansionError()
@@ -79,6 +80,7 @@ sealed class GetMacroExpansionError {
             ProcMacroExpansionError.ProcMacroExpansionIsDisabled -> "procedural macro expansion is not enabled"
         }
         ModDataNotFound -> "can't find ModData for containing mod of the macro call"
+        TooDeepExpansion -> "recursion limit reached"
         NoMacroIndex -> "can't find macro index of the macro call"
         ExpansionNameNotFound -> "internal error: expansion name not found"
         ExpansionFileNotFound -> "the macro is not yet expanded"
