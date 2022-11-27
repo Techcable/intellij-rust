@@ -1260,6 +1260,8 @@
             default="1000"
             groupKey="advanced.setting.rust.group"
         />
+
+        <iconMapper mappingFile="RustIconMappings.json"/>
     </extensions>
 
     <extensions defaultExtensionNs="org.rust">
