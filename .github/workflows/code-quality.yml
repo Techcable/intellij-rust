@@ -21,10 +21,20 @@ jobs:
               with:
                   arguments: ":resolveDependencies -Pkotlin.incremental=false --no-daemon"
 
-            - name: Build
+            - name: Generate lexer
               uses: gradle/gradle-build-action@v1
               with:
-                  arguments: "assemble testClasses -Pkotlin.incremental=false --no-daemon"
+                  arguments: ":generateRustLexer -Pkotlin.incremental=false --no-daemon"
+
+            - name: Delete old foc highlighting lexer
+              uses: gradle/gradle-build-action@v1
+              with:
+                  arguments: ":deleteOldRustDocHighlightingLexer -Pkotlin.incremental=false --no-daemon"
+
+            - name: Generate parser
+              uses: gradle/gradle-build-action@v1
+              with:
+                  arguments: ":generateRustParser -Pkotlin.incremental=false --no-daemon"
 
             - name: Qodana
               uses: JetBrains/qodana-action@v2022.2.3

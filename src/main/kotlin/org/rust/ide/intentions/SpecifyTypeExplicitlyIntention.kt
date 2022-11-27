@@ -10,12 +10,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import org.rust.ide.presentation.renderInsertionSafe
 import org.rust.ide.utils.import.RsImportHelper
-import org.rust.ide.utils.import.RsImportHelper.importTypeReferencesFromTy
 import org.rust.lang.core.psi.RsLetDecl
 import org.rust.lang.core.psi.RsPatIdent
 import org.rust.lang.core.psi.RsPsiFactory
 import org.rust.lang.core.psi.ext.RsBindingModeKind.BindByReference
-import org.rust.lang.core.psi.ext.RsElement
 import org.rust.lang.core.psi.ext.ancestorStrict
 import org.rust.lang.core.psi.ext.kind
 import org.rust.lang.core.psi.ext.startOffset
