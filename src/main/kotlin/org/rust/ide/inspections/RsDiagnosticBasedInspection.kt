@@ -18,7 +18,6 @@ abstract class RsDiagnosticBasedInspection : RsLocalInspectionTool() {
         override fun visitArrayType(o: RsArrayType) = collectDiagnostics(holder, o)
         override fun visitPath(o: RsPath) = collectDiagnostics(holder, o)
         override fun visitVariantDiscriminant(o: RsVariantDiscriminant) = collectDiagnostics(holder, o)
-        override fun visitAssocTypeBinding(o: RsAssocTypeBinding) = collectDiagnostics(holder, o)
     }
 
     private fun collectDiagnostics(holder: RsProblemsHolder, element: RsInferenceContextOwner) {

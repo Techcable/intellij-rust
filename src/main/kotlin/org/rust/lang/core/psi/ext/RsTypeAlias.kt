@@ -6,6 +6,8 @@
 package org.rust.lang.core.psi.ext
 
 import com.intellij.lang.ASTNode
+import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.SearchScope
 import com.intellij.psi.stubs.IStubElementType
@@ -22,12 +24,50 @@ import org.rust.lang.core.psi.rustPsiManager
 import org.rust.lang.core.psi.rustStructureModificationTracker
 import org.rust.lang.core.resolve.RsCachedTypeAlias
 import org.rust.lang.core.stubs.RsTypeAliasStub
-import org.rust.lang.core.types.RsPsiTypeImplUtil
+import org.rust.lang.core.types.*
+import org.rust.lang.core.types.consts.CtConstParameter
+import org.rust.lang.core.types.regions.ReEarlyBound
 import org.rust.lang.core.types.ty.Ty
+import org.rust.lang.core.types.ty.TyTypeParameter
 import javax.swing.Icon
+
+private val LOG: Logger = logger<RsTypeAlias>()
 
 val RsTypeAlias.default: PsiElement?
     get() = node.findChildByType(DEFAULT)?.psi
+
+fun RsTypeAlias.withSubst(vararg subst: Ty): BoundElement<RsTypeAlias> {
+    val typeParameterList = typeParameters
+    val substitution = if (typeParameterList.size != subst.size) {
+        LOG.warn("Type alias has ${typeParameterList.size} type parameters but received ${subst.size} types for substitution")
+        emptySubstitution
+    } else {
+        typeParameterList.withIndex().associate { (i, par) ->
+            val param = TyTypeParameter.named(par)
+            param to (subst.getOrNull(i) ?: param)
+        }.toTypeSubst()
+    }
+    return BoundElement(this, substitution)
+}
+
+fun RsTypeAlias.withDefaultSubst(): BoundElement<RsTypeAlias> =
+    BoundElement(this, defaultSubstitution(this))
+
+private fun defaultSubstitution(item: RsTypeAlias): Substitution {
+    val typeSubst = item.typeParameters.associate {
+        val parameter = TyTypeParameter.named(it)
+        parameter to parameter
+    }
+    val regionSubst = item.lifetimeParameters.associate {
+        val parameter = ReEarlyBound(it)
+        parameter to parameter
+    }
+    val constSubst = item.constParameters.associate {
+        val parameter = CtConstParameter(it)
+        parameter to parameter
+    }
+    return Substitution(typeSubst, regionSubst, constSubst)
+}
 
 abstract class RsTypeAliasImplMixin : RsStubbedNamedElementImpl<RsTypeAliasStub>, RsTypeAlias {
 

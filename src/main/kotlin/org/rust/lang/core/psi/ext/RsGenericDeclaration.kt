@@ -12,6 +12,10 @@ import org.rust.lang.core.types.BoundElement
 import org.rust.lang.core.types.emptySubstitution
 import org.rust.lang.core.types.rawType
 import org.rust.lang.core.types.toTypeSubst
+import org.rust.lang.core.types.consts.Const
+import org.rust.lang.core.types.consts.CtConstParameter
+import org.rust.lang.core.types.regions.ReEarlyBound
+import org.rust.lang.core.types.regions.Region
 import org.rust.lang.core.types.ty.Ty
 import org.rust.lang.core.types.ty.TyTypeParameter
 
@@ -67,3 +71,12 @@ fun <T : RsGenericDeclaration> T.withSubst(vararg subst: Ty): BoundElement<T> {
 }
 
 private val LOG: Logger = logger<RsGenericDeclaration>()
+
+val RsGenericDeclaration.defaultRegionArguments: List<Region>
+    get() = lifetimeParameters.map { param -> ReEarlyBound(param) }
+
+val RsGenericDeclaration.defaultTypeArguments: List<Ty>
+    get() = typeParameters.map { param -> TyTypeParameter.named(param) }
+
+val RsGenericDeclaration.defaultConstArguments: List<Const>
+    get() = constParameters.map { param -> CtConstParameter(param) }
