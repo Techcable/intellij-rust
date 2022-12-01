@@ -12,22 +12,82 @@ import com.intellij.psi.PsiElementResolveResult
 import com.intellij.psi.PsiPolyVariantReferenceBase
 import com.intellij.psi.ResolveResult
 import org.rust.ide.refactoring.isValidRustVariableIdentifier
+import org.rust.lang.core.macros.findExpansionElements
 import org.rust.lang.core.psi.RsElementTypes.*
 import org.rust.lang.core.psi.RsPsiFactory
 import org.rust.lang.core.psi.escapeIdentifierIfNeeded
 import org.rust.lang.core.psi.ext.RsElement
 import org.rust.lang.core.psi.ext.RsReferenceElementBase
+import org.rust.lang.core.psi.ext.ancestors
 import org.rust.lang.core.psi.ext.elementType
+import org.rust.openapiext.Testmark
 
 abstract class RsReferenceBase<T : RsReferenceElementBase>(
     element: T
 ) : PsiPolyVariantReferenceBase<T>(element),
     RsReference {
 
-    override fun resolve(): RsElement? = super.resolve() as? RsElement
+    final override fun resolve(): RsElement? {
+        val delegates = expandedDelegates
+        return if (delegates.isEmpty()) {
+            resolveInner()
+        } else {
+            delegates.flatMap { it.multiResolve() }.distinct().singleOrNull()
+        }
+    }
 
-    override fun multiResolve(incompleteCode: Boolean): Array<out ResolveResult> =
-        multiResolve().map { PsiElementResolveResult(it) }.toTypedArray()
+    protected open fun resolveInner(): RsElement? = super.resolve() as? RsElement
+
+    final override fun multiResolve(incompleteCode: Boolean): Array<out ResolveResult> {
+        val delegates = expandedDelegates
+        return if (delegates.isEmpty()) {
+            multiResolveInner(incompleteCode)
+        } else {
+            delegates.flatMap { it.multiResolve(incompleteCode).toList() }.distinct().toTypedArray()
+        }
+    }
+
+    protected open fun multiResolveInner(incompleteCode: Boolean): Array<out ResolveResult> =
+        multiResolveInner().map { PsiElementResolveResult(it) }.toTypedArray()
+
+    final override fun multiResolve(): List<RsElement> {
+        val delegates = expandedDelegates
+        return if (delegates.isEmpty()) {
+            multiResolveInner()
+        } else {
+            delegates.flatMap { it.multiResolve() }.distinct()
+        }
+    }
+
+    protected abstract fun multiResolveInner(): List<RsElement>
+
+    final override fun isReferenceTo(element: PsiElement): Boolean {
+        val delegates = expandedDelegates
+        return if (delegates.isEmpty()) {
+            isReferenceToInner(element)
+        } else {
+            delegates.any { it.isReferenceTo(element) }
+        }
+    }
+
+    protected open fun isReferenceToInner(element: PsiElement): Boolean {
+        return super.isReferenceTo(element)
+    }
+
+    val expandedDelegates: List<RsReference>
+        get() {
+            val delegates = element.findExpansionElements()?.mapNotNull { delegated ->
+                delegated.ancestors
+                    .mapNotNull { it.reference }
+                    .firstOrNull() as? RsReference
+            }.orEmpty()
+
+            if (delegates.isNotEmpty()) {
+                Testmarks.DelegatedToMacroExpansion.hit()
+            }
+
+            return delegates
+        }
 
     open val T.referenceAnchor: PsiElement? get() = referenceNameElement
 
@@ -71,5 +131,9 @@ abstract class RsReferenceBase<T : RsReferenceElementBase>(
             }
             identifier.replace(newId)
         }
+    }
+
+    object Testmarks {
+        object DelegatedToMacroExpansion : Testmark()
     }
 }
